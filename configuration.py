@@ -11,5 +11,5 @@ APPTITLE = "MicroPsi2 Motivation Model"
 VERSION = "0.1"
 
 class Settings():
-    update_milliseconds = 500
+    update_milliseconds = 100
     max_simulation_steps = 1000000

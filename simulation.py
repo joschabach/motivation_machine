@@ -14,13 +14,14 @@ from widgets import Settings
 from helper_widgets import Diagram
 
 
-from model import needs, need_index
+from model.model import update_all
+from model.needs import needs
 
 class Simulation(object):
     def __init__(self):
 
         self.needs = needs
-        self.need_index = need_index
+        self.need_index = needs
 
         self.current_simstep = 0
 
@@ -34,7 +35,7 @@ class Simulation(object):
                     need.frustrate()
                 if random()>0.99:
                     need.satisfy()
-                need.update()
+            update_all()
             self.current_simstep += 1
             self._update_log()
             return True
