@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Config data (default values) for reputation game
+Config data (default values) for motivation machine
 """
 
 __author__ = 'joscha'
@@ -13,3 +13,4 @@ VERSION = "0.1"
 class Settings():
     update_milliseconds = 100
     max_simulation_steps = 1000000
+

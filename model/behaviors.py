@@ -29,6 +29,10 @@ supplication = Behavior("supplication")
 
 behaviors = (fight, flight, foraging, exploration, courtship, approach, reflection, supplication)
 
+def reset():
+    for behavior in behaviors:
+        behavior.value = 0
+
 def update():
     fight = -valence.value * (dominance.value + competence.value + arousal.value)
     flight = -valence.value * (-dominance.value - competence.value)

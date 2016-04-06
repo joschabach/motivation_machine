@@ -11,6 +11,7 @@ from tkinter import *
 from tkinter import ttk, filedialog, messagebox
 from configuration import Settings
 import math
+import json
 
 import time
 
@@ -78,16 +79,46 @@ class GuiApp(Tk):
                     self.open_diagrams[key] = Diagram(self, self.simulation)
 
 
-    def calculate_need_coordinates(self, needs):
+    def calculate_need_coordinates(self):
         """Arrange the needs in a circle on the canvas"""
         self.need_coordinates = []
         origin = (350, 350)
-        r = 300
-        k = len(needs)
+        r = 220
+        k = len(self.simulation.needs)
         for n in range(0, k):
             self.need_coordinates.append(
                 (r * math.cos(2 * math.pi * n / k) + origin[0],
                  r * math.sin(2 * math.pi * n / k) + origin[1])
+            )
+
+        self.modulator_coordinates = []
+        origin = (350, 350)
+        r = 70
+        k = len(self.simulation.modulators)
+        for n in range(0, k):
+            self.modulator_coordinates.append(
+                (r * math.cos(2 * math.pi * n / k) + origin[0],
+                 r * math.sin(2 * math.pi * n / k) + origin[1])
+            )
+
+        self.consumption_coordinates = []
+        origin = (350, 350)
+        r = 320
+        k = len(self.simulation.consumptions)
+        for n in range(0, k):
+            self.consumption_coordinates.append(
+                (r * math.cos(2 * math.pi * n / k) + origin[0],
+                 r * math.sin(2 * math.pi * n / k) + origin[1])
+            )
+
+        self.aggregate_coordinates = []
+        origin = (350, 350)
+        r = 130
+        k = len(self.simulation.aggregates)
+        for n in range(0, k):
+            self.aggregate_coordinates.append(
+                (r * math.cos(2 * math.pi * (n + 0.2) / k) + origin[0],
+                 r * math.sin(2 * math.pi * (n + 0.2) / k) + origin[1])
             )
 
 
@@ -122,7 +153,7 @@ class GuiApp(Tk):
         for plot in diagrams:
             plot.destroy()  # close diagrams because they are bound to old data sets
 
-        self.setup_need_drawings(self.simulation.needs)
+        self.setup_need_drawings()
 
         self.update_display_after_simstep()
         self.status.set("ready to start")
@@ -138,8 +169,11 @@ class GuiApp(Tk):
 
 
     def export_simulation_data(self):
-        filename = filedialog.asksaveasfilename()
-        print("export simulation "+filename)
+        file = filedialog.asksaveasfilename(defaultextension=".json")
+        if file is None:  # asksaveasfile return `None` if dialog closed with "cancel".
+            return
+        open(file, 'w').write(json.dumps(self.simulation.log, sort_keys=True, indent=4))
+
 
     def export_plot(self):
         print("export diagram")
@@ -147,10 +181,10 @@ class GuiApp(Tk):
     def show_contact(self):
         messagebox.showinfo(title="Contact", message="Joscha Bach, 2016\njoscha@mit.edu")
 
-    def setup_need_drawings(self, needs):
+    def setup_need_drawings(self):
         """Draw needs and their respective values"""
         c = self.simulator.canvas
-        self.calculate_need_coordinates(needs)
+        self.calculate_need_coordinates()
         self.simulator.canvas.delete(ALL)
         radius = 10
         offset = 18
@@ -166,21 +200,69 @@ class GuiApp(Tk):
                 c.create_text(x, y + 2 * offset, text="", fill="orange"),
                 c.create_text(x, y - offset, text="", fill="green"),
                 c.create_text(x, y - 2 * offset, text="", fill="red"),
-                c.create_text(x, y, text=needs[i].name, fill="black"),
+                c.create_text(x, y, text=simulation.needs[i].name, fill="black"),
             ])
 
-    def update_need_value_labels(self, need_index, need):
-        """paints the updated values on the canvas"""
-        values = [need.urge_strength, need.urgency, need.pleasure, need.pain]
-        for index, value in enumerate(values):
-            self.simulator.canvas.itemconfig(self.need_value_labels[need_index][index], text= str(round(value, 3)))
+        self.consumption_drawings = []
+        self.consumption_value_labels = []
 
+        for i, (x, y) in enumerate(self.consumption_coordinates):
+            self.consumption_drawings.append(c.create_oval(x - radius, y - radius, x + radius, y + radius,
+                                                    outline="black", fill="orange", width=2))
+            self.consumption_value_labels.append([
+                c.create_text(x, y + offset, text="", fill="blue"),
+                c.create_text(x, y + 2 * offset, text="", fill="orange"),
+                c.create_text(x, y, text=simulation.consumptions[i].name, fill="black"),
+            ])
+
+        self.modulator_drawings = []
+        self.modulator_value_labels = []
+
+        for i, (x, y) in enumerate(self.modulator_coordinates):
+            self.modulator_drawings.append(c.create_oval(x - radius, y - radius, x + radius, y + radius,
+                                                    outline="black", fill="yellow", width=2))
+            self.modulator_value_labels.append([
+                c.create_text(x, y + offset, text="", fill="blue"),
+                c.create_text(x, y, text=simulation.modulators[i].name, fill="black"),
+            ])
+
+        self.aggregate_drawings = []
+        self.aggregate_value_labels = []
+
+        for i, (x, y) in enumerate(self.aggregate_coordinates):
+            self.aggregate_drawings.append(c.create_oval(x - radius, y - radius, x + radius, y + radius,
+                                                         outline="black", fill="red", width=2))
+            self.aggregate_value_labels.append([
+                c.create_text(x, y + offset, text="", fill="blue"),
+                c.create_text(x, y, text=simulation.aggregates[i].name, fill="black"),
+            ])
+
+    def update_need_value_labels(self):
+        """paints the updated values on the canvas"""
+        for i, v in enumerate(self.simulation.needs):
+            values = [v.value, v.urge, v.pleasure, v.pain]
+            for index, value in enumerate(values):
+                self.simulator.canvas.itemconfig(self.need_value_labels[i][index], text=str(round(value, 3)))
+
+        for i, v in enumerate(self.simulation.modulators):
+            values = [v.value]
+            for index, value in enumerate(values):
+                self.simulator.canvas.itemconfig(self.modulator_value_labels[i][index], text=str(round(value, 3)))
+
+        for i, v in enumerate(self.simulation.consumptions):
+            values = [v.value, v.default_reward]
+            for index, value in enumerate(values):
+                self.simulator.canvas.itemconfig(self.consumption_value_labels[i][index], text=str(round(value, 3)))
+
+        for i, v in enumerate(self.simulation.aggregates):
+            values = [v.value]
+            for index, value in enumerate(values):
+                self.simulator.canvas.itemconfig(self.aggregate_value_labels[i][index], text=str(round(value, 3)))
 
     def update_display_after_simstep(self):
         """Update gui display after every individual simulationstep"""
         self.simulator.simstep.set(self.simulation.current_simstep)
-        for i, need in enumerate(self.simulation.needs):
-            self.update_need_value_labels(i, need)
+        self.update_need_value_labels()
         self.update_plots()
 
 

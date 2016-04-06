@@ -232,6 +232,7 @@ class MainMenu(Menu):
         menu_simulation.add_separator()
         menu_simulation.add_command(label='Run', command = app.run_simulation)
         menu_simulation.add_command(label='Reset', command=app.reset_simulation)
+        menu_simulation.add_command(label='Save data...', command=app.export_simulation_data)
 
         menu_help.add_command(label='Contact', command=app.show_contact)
 
@@ -275,9 +276,9 @@ class Diagram(Toplevel):
 
     def plot(self):
         """overwrite this method to produce a different diagram type"""
-        data = self.simulation.log["value"]
+        data = self.simulation.log
         if len(data):
-            values = [step[0] for step in data]
+            values = [step["needs"]["food"]["value"] for step in data]
             self.subplot.plot(values, color="orange", linewidth=1.0)
 
     def destroy(self):

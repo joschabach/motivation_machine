@@ -117,7 +117,7 @@ def reset_simulation(app):
     for plot in diagrams:
         plot.destroy()  # close diagrams because they are bound to old data sets
 
-    app.setup_need_drawings(app.simulation.agents)
+    app.setup_need_drawings(app.simulation)
     app.display_simstep()
     app.display_generation()
     app.status.set("ready to start")
@@ -158,28 +158,28 @@ def export_plot(app):
     print("export diagram")
 
 def show_contact(app):
-    messagebox.showinfo(title="Contact", message="Joscha Bach, 2014\njoscha@mit.edu")
+    messagebox.showinfo(title="Contact", message="Joscha Bach, 2016\njoscha@mit.edu")
 
-def setup_agent_drawings(app, agents):
+def setup_element_drawings(app, elements):
     """Draw agents and their reputation values"""
     c = app.simulator.canvas
-    app.calculate_need_coordinates(agents)
+    app.calculate_need_coordinates(elements)
     app.simulator.canvas.delete(ALL)
     radius = 10
     offset = 18
-    app.agent_drawings = []
-    app.agent_deception_labels = []
-    app.agent_reputation_labels = []
-    app.agent_value_labels = []
+    app.need_drawings = []
+    app.need_pain_labels = []
+    app.need_pleasure_labels = []
+    app.need_value_labels = []
 
     for i, (x, y) in enumerate(app.agent_coordinates):
-        app.agent_drawings.append(c.create_oval(x-radius, y-radius, x+radius, y+radius,
-                                                                     outline="black", fill="lightblue", width=2))
-        app.agent_deception_labels.append(c.create_text(x, y - offset,
-                                                         text=agents[i]["deception probability"], fill="brown"))
-        app.agent_value_labels.append(c.create_text(x, y+offset, text=agents[i]["value"], fill="orange"))
-        app.agent_reputation_labels.append(c.create_text(x, y+2*offset,
-                                                          text=agents[i]["reputation"], fill="blue"))
+        app.need_drawings.append(c.create_oval(x - radius, y - radius, x + radius, y + radius,
+                                               outline="black", fill="lightblue", width=2))
+        app.need_pain_labels.append(c.create_text(x, y - offset,
+                                                  text=elements[i]["deception probability"], fill="brown"))
+        app.need_value_labels.append(c.create_text(x, y + offset, text=elements[i]["value"], fill="orange"))
+        app.need_pleasure_labels.append(c.create_text(x, y + 2 * offset,
+                                                      text=elements[i]["reputation"], fill="blue"))
 
     app.current_relation = None  # no line is drawn between agent images
 
