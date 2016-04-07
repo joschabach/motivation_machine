@@ -34,4 +34,4 @@ def get_inverted_decay_value(y):
 
 def exponential_scaling(x, factor=6):
     """Scales a number between 0 and infinity to a number between 0 and 1."""
-    return 1/-math.exp(x*factor)+1
+    return 1-math.exp(-max(0,x)*factor)

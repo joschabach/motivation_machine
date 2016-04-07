@@ -120,7 +120,7 @@ class Need(object):
 
 # define the needs of our agent; these are going to be used in the simulation
 
-food = Need("food", type="physiological", initial_value=1, weight=0.6, decay=1, gain=0.5, loss=0.01,
+food = Need("food", type="physiological", initial_value=1, weight=0.6, decay=100000, gain=0.5, loss=0.01,
             satisfaction_from_imagination=0.0, frustration_from_imagination=0.0)
 water = Need("water", type="physiological", weight=1, decay=9000, gain=1, loss=0.3,
              satisfaction_from_imagination=0.0, frustration_from_imagination=0.0)
