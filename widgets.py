@@ -17,15 +17,13 @@ import time
 
 import simulation
 
-
-
 from helper_widgets import MainMenu, SimFrame, ConfigDialog
 
-class GuiApp(Tk):
 
+class GuiApp(Tk):
     def __init__(self, *args, **kwargs):
         Tk.__init__(self, *args, **kwargs)
-        #self.geometry("500x500")
+        # self.geometry("500x500")
         self.minsize(500, 250)
 
         # menus
@@ -33,7 +31,7 @@ class GuiApp(Tk):
         menubar = MainMenu(self)
         for diagram in simulation.diagrams:
             key = diagram.key
-            menubar.menu_plot.add_command(label= "Plot " + key, command=lambda key=key : self.open_diagram(key))
+            menubar.menu_plot.add_command(label="Plot " + key, command=lambda key=key: self.open_diagram(key))
         self.config(menu=menubar)
 
         # diagram
@@ -52,7 +50,6 @@ class GuiApp(Tk):
         self.simulator = SimFrame(content_frame)
         self.simulator.grid(row=0, column=0, sticky=(W, E))
 
-
         spacer = ttk.Frame(content_frame)
         spacer.grid(row=98, column=0, sticky=(W, E, N, S))
         spacer.rowconfigure(0, weight=1)
@@ -60,9 +57,9 @@ class GuiApp(Tk):
         self.spacer = spacer
 
         self.status = StringVar()
-        self.status_bar = ttk.Frame(content_frame, padding = (6, 6, 6, 6), relief="sunken")
+        self.status_bar = ttk.Frame(content_frame, padding=(6, 6, 6, 6), relief="sunken")
         self.status_bar.grid(row=99, column=0, sticky=(W, E, N, S))
-        self.status_label = ttk.Label(self.status_bar, textvariable = self.status)
+        self.status_label = ttk.Label(self.status_bar, textvariable=self.status)
         self.status_label.grid(row=0, column=0, sticky=(W, E, N, S))
 
         # simulation thread
@@ -70,14 +67,12 @@ class GuiApp(Tk):
 
         self.reset_simulation()
 
-
     def open_diagram(self, key):
         """open a diagram window for the given type"""
-        if not key in self.open_diagrams:
+        if key not in self.open_diagrams:
             for Diagram in simulation.diagrams:
                 if Diagram.key == key:
                     self.open_diagrams[key] = Diagram(self, self.simulation)
-
 
     def calculate_need_coordinates(self):
         """Arrange the needs in a circle on the canvas"""
@@ -121,7 +116,6 @@ class GuiApp(Tk):
                  r * math.sin(2 * math.pi * (n + 0.2) / k) + origin[1])
             )
 
-
     def configure_simulation(self):
         """Configure simulation settings and initialize values"""
         ConfigDialog(self)  # will call reset simulation for us
@@ -134,7 +128,7 @@ class GuiApp(Tk):
             self.simulation.step()
             self.update_display_after_simstep()
             self.update()
-            time.sleep(Settings.update_milliseconds/1000)
+            time.sleep(Settings.update_milliseconds / 1000)
 
     def stop_simulation(self):
         """Pauses the runner that triggers simulation steps"""
@@ -158,7 +152,6 @@ class GuiApp(Tk):
         self.update_display_after_simstep()
         self.status.set("ready to start")
 
-
     def step_simulation(self):
         """Advances the simulation by a single step"""
         self.running = False
@@ -167,13 +160,11 @@ class GuiApp(Tk):
         self.update_display_after_simstep()
         self.status.set("paused")
 
-
     def export_simulation_data(self):
         file = filedialog.asksaveasfilename(defaultextension=".json")
         if file is None:  # asksaveasfile return `None` if dialog closed with "cancel".
             return
         open(file, 'w').write(json.dumps(self.simulation.log, sort_keys=True, indent=4))
-
 
     def export_plot(self):
         print("export diagram")
@@ -191,16 +182,15 @@ class GuiApp(Tk):
         self.need_drawings = []
         self.need_value_labels = []
 
-
         for i, (x, y) in enumerate(self.need_coordinates):
-            self.need_drawings.append(c.create_oval(x-radius, y-radius, x+radius, y+radius,
-                                                                         outline="black", fill="lightblue", width=2))
+            self.need_drawings.append(c.create_oval(x - radius, y - radius, x + radius, y + radius,
+                                                    outline="black", fill="lightblue", width=2))
             self.need_value_labels.append([
                 c.create_text(x, y + offset, text="", fill="blue"),
                 c.create_text(x, y + 2 * offset, text="", fill="orange"),
                 c.create_text(x, y - offset, text="", fill="green"),
                 c.create_text(x, y - 2 * offset, text="", fill="red"),
-                c.create_text(x, y, text=simulation.needs[i].name, fill="black"),
+                c.create_text(x, y, text=self.simulation.needs[i].name, fill="black"),
             ])
 
         self.consumption_drawings = []
@@ -208,11 +198,11 @@ class GuiApp(Tk):
 
         for i, (x, y) in enumerate(self.consumption_coordinates):
             self.consumption_drawings.append(c.create_oval(x - radius, y - radius, x + radius, y + radius,
-                                                    outline="black", fill="orange", width=2))
+                                                           outline="black", fill="orange", width=2))
             self.consumption_value_labels.append([
                 c.create_text(x, y + offset, text="", fill="blue"),
                 c.create_text(x, y + 2 * offset, text="", fill="orange"),
-                c.create_text(x, y, text=simulation.consumptions[i].name, fill="black"),
+                c.create_text(x, y, text=self.simulation.consumptions[i].name, fill="black"),
             ])
 
         self.modulator_drawings = []
@@ -220,7 +210,7 @@ class GuiApp(Tk):
 
         for i, (x, y) in enumerate(self.modulator_coordinates):
             self.modulator_drawings.append(c.create_oval(x - radius, y - radius, x + radius, y + radius,
-                                                    outline="black", fill="yellow", width=2))
+                                                         outline="black", fill="yellow", width=2))
             self.modulator_value_labels.append([
                 c.create_text(x, y + offset, text="", fill="blue"),
                 c.create_text(x, y, text=self.simulation.modulators[i].name, fill="black"),
@@ -234,7 +224,7 @@ class GuiApp(Tk):
                                                          outline="black", fill="red", width=2))
             self.aggregate_value_labels.append([
                 c.create_text(x, y + offset, text="", fill="blue"),
-                c.create_text(x, y, text=simulation.aggregates[i].name, fill="black"),
+                c.create_text(x, y, text=self.simulation.aggregates[i].name, fill="black"),
             ])
 
     def update_need_value_labels(self):
@@ -265,11 +255,9 @@ class GuiApp(Tk):
         self.update_need_value_labels()
         self.update_plots()
 
-
     def update_plots(self):
         try:
             for plot in self.open_diagrams.values():
                 plot.update_diagram()
         except RuntimeError:  # thread hates it when we add new diagrams while running
             pass
-

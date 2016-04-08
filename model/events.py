@@ -7,7 +7,11 @@ Events (goals and things that are going to happen)
 __author__ = 'joscha'
 __date__ = '4/4/16'
 
-from model.needs import *
+import model.needs as needs
+from configuration import Settings
+
+
+goal = None
 
 
 class Event(object):
@@ -35,17 +39,20 @@ class Event(object):
             if self.expiration < 0:
                 self.expiration = 0  # you have to drop expired events explicitly
 
+    def is_goal(self):
+        return self is goal
+
 
 events = {}
 
 
-def create_event(id, consumption_name="admiration", expected_reward=0, certainty=1, skill=0.8, expiration=-1):
+def create_event(id, consumption_name, expected_reward=0, certainty=1, skill=0.8, expiration=-1):
     """Create a new expected event (can also be aversive).
     These are not actual events, but estimates of the agent.
     The creation of events gives us pleasure and pain signals, too.
     Note that we are only interested in events with motivation relevance, i.e. anticipated consumption"""
     if id not in events:
-        consumption = [c for c in consumptions if c.name == consumption_name][0]
+        consumption = needs.consumptions[consumption_name]
         event = Event(id, consumption=consumption, expected_reward=0, certainty=0, skill=skill,
                       expiration=expiration)
         events[id] = event
@@ -76,18 +83,18 @@ def change_event(id, expected_reward=None, certainty=None, skill=None, expiratio
 
     # react to changes in certainty
     if certainty_delta > 0:  # increase in certainty, proportional to relevance of event
-        confirmation.trigger(certainty_delta * relevance)
+        needs.consumptions["confirmation"].trigger(certainty_delta * relevance)
     if certainty_delta < 0:  # decrease in certainty
-        disconfirmation.trigger(- certainty_delta * relevance)
+        needs.consumptions["disconfirmation"].trigger(- certainty_delta * relevance)
 
-    if event is goal:
-        failure.trigger(-relevance * goal.skill * goal.certainty)
+    if event.is_goal():
+        needs.consumptions["failure"].trigger(-relevance * goal.skill * goal.certainty)
 
         # react to changes in expected competence
         if skill_delta > 0:  # increase in epistemic competence
-            success.anticipate(skill_delta * relevance)
+            needs.consumptions["success"].anticipate(skill_delta * relevance)
         if skill_delta < 0:
-            failure.anticipate(-skill_delta * relevance)
+            needs.consumptions["failure"].anticipate(-skill_delta * relevance)
 
 
 def drop_event(id):
@@ -113,19 +120,18 @@ def execute_event(id, reward=None):
     relevance = abs(reward * event.consumption.need.weight)
 
     # how well could I predict the event?
-    confirmation.trigger((1 - abs(reward - event.expected_reward)) * relevance)
+    needs.consumptions["confirmation"].trigger((1 - abs(reward - event.expected_reward)) * relevance)
     # I am only disappointed if I assumed the event to happen with high certainty
-    disconfirmation.trigger(-abs(reward - event.expected_reward) * relevance * event.certainty)
+    needs.consumptions["disconfirmation"].trigger(-abs(reward - event.expected_reward) * relevance * event.certainty)
 
     if reward < event.expected_reward:
-        failure.trigger((reward - event.expected_reward) * relevance)
-        if event is goal:
-            failure.trigger(event.skill * relevance)  # I failed at my skillz
-        success.trigger(relevance)
+        needs.consumptions["failure"].trigger((reward - event.expected_reward) * relevance)
+        if event.is_goal():
+            needs.consumptions["failure"].trigger(event.skill * relevance)  # I failed at my skillz
 
     else:  # better than expected
-        if event is goal:
-            success.trigger((1 - event.skill) * relevance)  # I succeeded at my skillz
+        if event.is_goal():
+            needs.consumptions["success"].trigger((1 - event.skill) * relevance)  # I succeeded at my skillz
 
     if event is goal: set_goal(None)
     remove_event(id)
@@ -133,15 +139,15 @@ def execute_event(id, reward=None):
 
 def consume(consumption_name, reward=None):
     """Just consume an unexpected gain or loss, without going to the trouble of creating an event or goal first"""
-    consumption = get_consumption(consumption_name)
+    consumption = needs.consumptions[consumption_name]
     if reward is None: reward = consumption.default_reward
 
     consumption.trigger(reward)
 
     if reward < 0:  # something bad happened unexpectedly, increase uncertainty
-        disconfirmation.trigger(reward)
+        needs.consumptions["disconfirmation"].trigger(reward)
     else:  # something good happened unexpectedly, still increase uncertainty
-        disconfirmation.trigger(reward / 2)
+        needs.consumptions["disconfirmation"].trigger(reward / 2)
 
 
 def get_events():

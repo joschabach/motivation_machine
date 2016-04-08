@@ -23,10 +23,10 @@ class Simulation(object):
     def __init__(self):
 
         api.reset()
-        self.needs = needs
-        self.consumptions = consumptions
+        self.needs = list(needs.values())
+        self.consumptions = list(consumptions.values())
         self.modulators = list(modulators.values())
-        self.aggregates = aggregates
+        self.aggregates = list(aggregates.values())
         self.need_index = needs
 
         self.current_simstep = 0

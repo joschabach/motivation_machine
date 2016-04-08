@@ -7,7 +7,7 @@ Interface of the motivation machine
 __author__ = 'joscha'
 __date__ = '3/14/16'
 
-from model.agent import needs, modulators
+from model import agent, needs, modulators
 from model import events
 
 step = 0

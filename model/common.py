@@ -51,9 +51,10 @@ def calculate_signal_strength(step, total_amount = 1.0, duration = 3.5):
     We approximate the curve as a chi distribution with degree 2: f(x) = x * exp(-x*x/2)
     It peaks after 1s at 0.6, and has delivered 99.78% of the signal after 3.5s. Half of the signal
     has been delivered at 1.41s"""
-    step_length = Settings.update_milliseconds / 1000 * duration / 3.5
+
+    step_length = Settings.update_milliseconds / 1000 * 3.5 / duration
     t1 = step * step_length
     t2 = (step+1) * step_length
     # amount is the integral from t1 to t2, i.e. beginning and end of the current timestep of the simulation
     amount = math.exp(-t1*t1/2) - math.exp(-t2*t2/2)
-    return amount * total_amount
+    return amount * total_amount / duration * 3.5
