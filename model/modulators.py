@@ -144,9 +144,10 @@ def compute_global_urgency():
 
 def compute_global_competence():
     """Tells us how well we are able to cope with the world right now"""
-    aggregates["general_competence"].value = 1 - needs["competence"].value
+    aggregates["general_competence"].value = needs["competence"].value
     if goal:
         aggregates["epistemic_competence"].value = goal.skill
+        aggregates["general_competence"].value = (aggregates["general_competence"].value*goal.skill)**0.5
     else:
         aggregates["epistemic_competence"].value = aggregates["general_competence"].value
 

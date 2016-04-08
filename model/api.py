@@ -8,7 +8,7 @@ __author__ = 'joscha'
 __date__ = '3/14/16'
 
 from model import agent, needs, modulators
-from model import events
+from model import events, emotions
 
 step = 0
 
@@ -20,6 +20,7 @@ def reset():
     needs.reset()
     modulators.reset()
     events.reset()
+    emotions.reset()
 
 
 def update():
@@ -29,6 +30,7 @@ def update():
     needs.update()
     modulators.update()
     events.update()
+    emotions.update()
 
 
 def get_needs():
@@ -56,6 +58,11 @@ def get_events():
     return events.get_events()
 
 
+def get_emotions():
+    """Returns a sorted list of dicts with the currently anticipated events"""
+    return emotions.get_emotions()
+
+
 def get_data():
     """Returns a dict of all the above items"""
     return {"step": step,
@@ -63,6 +70,7 @@ def get_data():
             "consumptions": get_consumptions(),
             "modulators": get_modulators(),
             "aggregates": get_aggregates(),
+            "emotions": get_emotions(),
             "events": get_events()}
 
 

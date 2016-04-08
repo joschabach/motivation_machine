@@ -98,7 +98,7 @@ class GuiApp(Tk):
 
         self.consumption_coordinates = []
         origin = (350, 350)
-        r = 320
+        r = 290
         k = len(self.simulation.consumptions)
         for n in range(0, k):
             self.consumption_coordinates.append(
@@ -114,6 +114,15 @@ class GuiApp(Tk):
             self.aggregate_coordinates.append(
                 (r * math.cos(2 * math.pi * (n + 0.2) / k) + origin[0],
                  r * math.sin(2 * math.pi * (n + 0.2) / k) + origin[1])
+            )
+
+        self.emotion_coordinates = []
+        origin = (350, 680)
+        width = 650
+        k = len(self.simulation.emotions)
+        for n in range(0, k):
+            self.emotion_coordinates.append(
+                (n * width/k - width/2 + origin[0]+20, origin[1])
             )
 
     def configure_simulation(self):
@@ -227,6 +236,17 @@ class GuiApp(Tk):
                 c.create_text(x, y, text=self.simulation.aggregates[i].name, fill="black"),
             ])
 
+        self.emotion_drawings = []
+        self.emotion_value_labels = []
+
+        for i, (x, y) in enumerate(self.emotion_coordinates):
+            self.emotion_drawings.append(c.create_oval(x - radius, y - radius, x + radius, y + radius,
+                                                         outline="black", fill="red", width=2))
+            self.emotion_value_labels.append([
+                c.create_text(x, y + offset, text="", fill="purple"),
+                c.create_text(x, y, text=self.simulation.emotions[i].name, fill="black"),
+            ])
+
     def update_need_value_labels(self):
         """paints the updated values on the canvas"""
         for i, v in enumerate(self.simulation.needs):
@@ -248,6 +268,11 @@ class GuiApp(Tk):
             values = [v.value]
             for index, value in enumerate(values):
                 self.simulator.canvas.itemconfig(self.aggregate_value_labels[i][index], text=str(round(value, 3)))
+
+        for i, v in enumerate(self.simulation.emotions):
+            values = [v.value]
+            for index, value in enumerate(values):
+                self.simulator.canvas.itemconfig(self.emotion_value_labels[i][index], text=str(round(value, 3)))
 
     def update_display_after_simstep(self):
         """Update gui display after every individual simulationstep"""

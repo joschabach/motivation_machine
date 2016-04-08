@@ -32,7 +32,7 @@ Need("nurturing", type="social", weight=3, decay=6400, gain=0.5, loss=0.7)
 Need("dominance", type="social", weight=0.5, decay=300000, gain=0.2, loss=0.4)
 Need("affection", type="social", weight=10, decay=10000000, gain=0.8, loss=1)
 
-Need("competence", type="cognitive", weight=0.3, decay=1000)
+Need("competence", type="cognitive", weight=0.2, decay=1000, gain = 0.2, loss=0.2)
 Need("exploration", type="cognitive", weight=0.1, decay=1000)
 Need("aesthetics", type="cognitive", weight=0.2, decay=6400)
 

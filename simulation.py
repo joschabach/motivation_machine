@@ -17,6 +17,7 @@ from helper_widgets import Diagram
 from model import api
 from model.needs import needs, consumptions
 from model.modulators import modulators, aggregates
+from model.emotions import emotions
 
 
 class Simulation(object):
@@ -27,6 +28,7 @@ class Simulation(object):
         self.consumptions = list(consumptions.values())
         self.modulators = list(modulators.values())
         self.aggregates = list(aggregates.values())
+        self.emotions = list(emotions.values())
         self.need_index = needs
 
         self.current_simstep = 0
