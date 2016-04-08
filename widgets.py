@@ -15,7 +15,7 @@ import json
 
 import time
 
-import simulation as simulation
+import simulation
 
 
 
@@ -223,7 +223,7 @@ class GuiApp(Tk):
                                                     outline="black", fill="yellow", width=2))
             self.modulator_value_labels.append([
                 c.create_text(x, y + offset, text="", fill="blue"),
-                c.create_text(x, y, text=simulation.modulators[i].name, fill="black"),
+                c.create_text(x, y, text=self.simulation.modulators[i].name, fill="black"),
             ])
 
         self.aggregate_drawings = []
@@ -250,7 +250,7 @@ class GuiApp(Tk):
                 self.simulator.canvas.itemconfig(self.modulator_value_labels[i][index], text=str(round(value, 3)))
 
         for i, v in enumerate(self.simulation.consumptions):
-            values = [v.value, v.default_reward]
+            values = [v.value]
             for index, value in enumerate(values):
                 self.simulator.canvas.itemconfig(self.consumption_value_labels[i][index], text=str(round(value, 3)))
 

@@ -14,9 +14,10 @@ from widgets import Settings
 from helper_widgets import Diagram
 
 
-import model.api as api
+from model import api
 from model.needs import needs, consumptions
 from model.modulators import modulators, aggregates
+
 
 class Simulation(object):
     def __init__(self):
@@ -24,7 +25,7 @@ class Simulation(object):
         api.reset()
         self.needs = needs
         self.consumptions = consumptions
-        self.modulators = modulators
+        self.modulators = list(modulators.values())
         self.aggregates = aggregates
         self.need_index = needs
 
@@ -43,9 +44,6 @@ class Simulation(object):
             self._update_log()
             return True
         return False
-
-
-
 
     def _update_log(self):
         """adds the current values to the log."""

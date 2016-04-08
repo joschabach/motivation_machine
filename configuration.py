@@ -14,3 +14,10 @@ class Settings():
     update_milliseconds = 40  # 25 frames/s
     max_simulation_steps = 1000000
 
+
+
+
+
+
+
+

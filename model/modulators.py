@@ -8,9 +8,11 @@ __author__ = 'joscha'
 __date__ = '31.03.16'
 
 from model.common import decay, exponential_scaling
-from model.needs import needs, competence, exploration, consumptions
+from model import needs # import needs, competence, exploration, consumptions
 from model.events import events, goal
 
+
+modulators = {}
 
 class Modulator(object):
     """Modulators create a configuration of the cognitive system that amounts to a space of affective states.
@@ -28,6 +30,8 @@ class Modulator(object):
         self.max = max
         self.volatility = volatility
         self.decay = decay
+
+        modulators[name] = self
 
     def update(self):
         """Perform updates of the value of the modulator, based on the time."""
@@ -59,18 +63,7 @@ class Modulator(object):
         self.value = min(self.max, max(self.min, self.value + diff))
 
 
-valence = Modulator("valence", baseline=0.2, min=-1.0, max=1.0)
-arousal = Modulator("arousal", baseline=0.3, min=0.0, max=1.0)
-dominance = Modulator("dominance", baseline=0.0, min=-1.0, max=1.0)  # approach or retraction
 
-resolution_level = Modulator("resolution_level", baseline=0.5, min=0.0, max=1.0)  # detail in perception and cognition
-focus = Modulator("focus", baseline=0.5, min=0.0, max=1.0)  # selection threshold, and narrowness of perspective
-securing_rate = Modulator("securing_rate", baseline=0.0, min=-1.0, max=1.0)  # attention outwards or inwards
-
-modulators = [valence, arousal, dominance, resolution_level, focus, securing_rate]
-
-def get_modulator(name):
-    return [m for m in modulators if m.name == name][0]
 
 # intermediate parameters, normalized between 0 and 1, so we can use them for display
 class Aggregate(object):
@@ -101,8 +94,11 @@ def compute_global_pain():
     amplify = 2  # increase signal for leading motive; this is on top of the normal weight
     # todo: we might also want to amplify depending on securing rate
 
-    sum_pain = sum([need.pain for need in needs]) + goal.consumption.need.pain * amplify * focus.value
-    max_pain = sum([need.weight for need in needs]) + goal.consumption.need.weight * amplify * focus.max
+    sum_pain = sum([need.pain for need in needs])
+    max_pain = sum([need.weight for need in needs])
+    if goal:
+        sum_pain += goal.consumption.need.pain * amplify * modulators["focus"].value
+        max_pain += goal.consumption.need.weight * amplify * modulators["focus"].max
     combined_pain.value = exponential_scaling(sum_pain / max_pain)
 
 
@@ -113,8 +109,11 @@ def compute_global_pleasure():
     amplify = 2  # increase signal for leading motive; this is on top of the normal weight
     # todo: we might also want to amplify depending on securing rate
 
-    sum_pleasure = sum([need.pleasure for need in needs]) + goal.consumption.need.pleasure * amplify * focus.value
-    max_pleasure = sum([need.weight for need in needs]) + goal.consumption.need.weight * amplify * focus.max
+    sum_pleasure = sum([need.pleasure for need in needs])
+    max_pleasure = sum([need.weight for need in needs])
+    if goal:
+        sum_pleasure += goal.consumption.need.pleasure * amplify * modulators["focus"].value
+        max_pleasure += goal.consumption.need.weight * amplify * modulators["focus"].max
     combined_pleasure.value = exponential_scaling(sum_pleasure / max_pleasure)
 
 
@@ -123,8 +122,11 @@ def compute_global_urge():
     Also takes attention into account."""
     amplify = 2  # increase signal for leading motive; this is on top of the normal weight
 
-    sum_urge_strength = sum([need.urge for need in needs]) + goal.consumption.need.urge * amplify * focus.value
-    max_urge_strength = sum([need.weight for need in needs]) + goal.consumption.need.weight * amplify * focus.value
+    sum_urge_strength = sum([need.urge for need in needs])
+    max_urge_strength = sum([need.weight for need in needs])
+    if goal:
+        sum_urge_strength += goal.consumption.need.urge * amplify * modulators["focus"].value
+        max_urge_strength += goal.consumption.need.weight * amplify * modulators["focus"].value
     combined_urge.value = exponential_scaling(sum_urge_strength / max_urge_strength)
 
 
@@ -135,71 +137,92 @@ def compute_global_urgency():
 
     amplify = 2  # increase signal for leading motive; this is on top of the normal weight
 
-    sum_urgency = sum([need.urgency for need in needs]) + goal.consumption.need.urgency * amplify * focus.value
-    max_urgency = sum([need.weight for need in needs]) + goal.consumption.need.weight * amplify * focus.max
+    sum_urgency = sum([need.urgency for need in needs])
+    max_urgency = sum([need.weight for need in needs])
+    if goal:
+        sum_urgency += goal.consumption.need.urgency * amplify * modulators["focus"].value
+        max_urgency += goal.consumption.need.weight * amplify * modulators["focus"].max
     combined_urgency.value = exponential_scaling(sum_urgency / max_urgency)
 
 
 def compute_global_competence():
     """Tells us how well we are able to cope with the world right now"""
-    general_competence.value = 1 - competence.value
-    epistemic_competence.value = goal.skill
+    general_competence.value = 1 - needs.competence.value
+    if goal:
+        epistemic_competence.value = goal.skill
+    else:
+        epistemic_competence.value = general_competence.value
 
 
 def update():
     """Call this function in every timestep to update the modulator influences."""
 
-    for modulator in modulators:
+    for modulator in modulators.values():
         modulator.update()
 
     compute_global_pain()
     compute_global_pleasure()
 
     # valence combines pleasure and pain (~ serotonin)
-    valence.approach(combined_pleasure.value - combined_pain.value)
+    modulators["valence"].approach(combined_pleasure.value - combined_pain.value)
 
     # arousal depends on the urges and urgencies of all needs (~ noradrenaline)
     compute_global_urge()
     compute_global_urgency()
 
-    arousal.approach((combined_urge.value + combined_urgency.value)/2)
+    modulators["arousal"].approach((combined_urge.value + combined_urgency.value)/2)
 
     # dominance depends on general competence and the estimated probability of getting reward (~ dopamine)
     compute_global_competence()
-    dominance.approach((general_competence.value + epistemic_competence.value) / 2)
+    modulators["dominance"].approach((general_competence.value + epistemic_competence.value) / 2)
 
     # resolution level defines attention to detail
-    amplify = 1  # factor by which we increase arousal based on strength of leading motive
-    target = amplify * (goal.consumption.need.urge- goal.consumption.need.urgency) - arousal.get_normalized_value()
-    max_target = amplify * (goal.consumption.need.weight - 0) + 1.0
-    min_target = amplify * (0 - goal.consumption.need.weight) - 1.0
-    normalized_target = ((target - min_target) * 2) / (max_target - min_target) - 1
+    if goal:
+        amplify = 1  # factor by which we increase arousal based on strength of leading motive
+        target = amplify * (goal.consumption.need.urge- goal.consumption.need.urgency) - modulators["arousal"].get_normalized_value()
+        max_target = amplify * (goal.consumption.need.weight - 0) + 1.0
+        min_target = amplify * (0 - goal.consumption.need.weight) - 1.0
+        normalized_target = ((target - min_target) * 2) / (max_target - min_target) - 1
+    else:
+        normalized_target = 1 - modulators["arousal"].get_normalized_value()
 
-    resolution_level.approach(normalized_target)
+    modulators["resolution_level"].approach(normalized_target)
 
     # focus gives the rate of inhibition of competing urges and stimuli
-    target = (arousal.get_normalized_value() + goal.consumption.need.urge + goal.consumption.need.urgency
-              - exploration.urge  # = perceived uncertainty
-              + general_competence.value)
-    max_target = (1.0 + goal.consumption.need.weight + goal.consumption.need.weight - 0 + 1.0)
-    min_target = (-1.0 + goal.consumption.need.weight + goal.consumption.need.weight - exploration.weight - 0)
-    normalized_target = ((target - min_target) * 2) / (max_target - min_target) - 1
+    if goal:
+        target = (modulators["arousal"].get_normalized_value() + goal.consumption.need.urge + goal.consumption.need.urgency
+                  - needs.exploration.urge  # = perceived uncertainty
+                  + general_competence.value)
+        max_target = (1.0 + goal.consumption.need.weight + goal.consumption.need.weight - 0 + 1.0)
+        min_target = (-1.0 + goal.consumption.need.weight + goal.consumption.need.weight - needs.exploration.weight - 0)
+        normalized_target = ((target - min_target) * 2) / (max_target - min_target) - 1
+    else:
+        target = modulators["arousal"].get_normalized_value() - needs.exploration.urge + general_competence.value
+        max_target = 1 - 0 + 1
+        min_target = -1 - needs.exploration.weight
+        normalized_target = ((target - min_target) * 2) / (max_target - min_target) - 1
 
-    focus.approach(normalized_target)
+    modulators["focus"].approach(normalized_target)
 
     # securing rate defines how much attention is directed on updating the model of the environment
-    target = (exploration.urge-(goal.consumption.need.urge + goal.consumption.need.urgency)
-              + epistemic_competence.value)
-    max_target = (exploration.weight - (0 + 0) + 1.0)
-    min_target = (exploration.weight - (goal.consumption.need.weight + goal.consumption.need.weight) + 0)
-    normalized_target = ((target - min_target) * 2) / (max_target - min_target) - 1
+    if goal:
+        target = (needs.exploration.urge-(goal.consumption.need.urge + goal.consumption.need.urgency)
+                  + epistemic_competence.value)
+        max_target = (needs.exploration.weight - (0 + 0) + 1.0)
+        min_target = (needs.exploration.weight - (goal.consumption.need.weight + goal.consumption.need.weight) + 0)
+        normalized_target = ((target - min_target) * 2) / (max_target - min_target) - 1
+    else:
+        target = needs.exploration.urge + epistemic_competence.value
+        max_target = needs.exploration.weight + 1.0
+        min_target = needs.exploration.weight
+        normalized_target = ((target - min_target) * 2) / (max_target - min_target) - 1
 
-    securing_rate.approach(normalized_target)
+    modulators["securing_rate"].approach(normalized_target)
 
 
 def reset():
     """set all values to their initial condition"""
-    for modulator in modulators:
+    for modulator in modulators.values():
         modulator.value = modulator.baseline
     for aggregate in aggregates:
         aggregate.value = 0
@@ -219,4 +242,4 @@ def get_modulators():
                      "baseline": m.baseline,
                      "min": m.min,
                      "max": m.max}
-            for m in modulators}
+            for m in modulators.values()}
