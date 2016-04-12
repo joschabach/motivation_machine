@@ -117,7 +117,7 @@ def reset_simulation(app):
     for plot in diagrams:
         plot.destroy()  # close diagrams because they are bound to old data sets
 
-    app.setup_need_drawings(app.simulation)
+    app.setup_need_drawings(app.simulation.agents)
     app.display_simstep()
     app.display_generation()
     app.status.set("ready to start")

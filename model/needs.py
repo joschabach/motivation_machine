@@ -80,7 +80,7 @@ class Need(object):
 
     def _compute_pain_from_depletion(self):
         """pain created by depletion of resource"""
-        pain = clip(1 - 20 * self.value) ** 2 * self.weight * self.pain_sensitivity  # pain starts at 90% depletion
+        pain = clip(1 - 20 * self.value) ** 2 * self.weight  # pain starts at 90% depletion
         self.pain = max(self.pain, pain)
 
     def satisfy(self, delta):
@@ -110,15 +110,23 @@ class Need(object):
         self.value -= delta * self.frustration_from_imagination
         self._increase_pain(min(self.value, delta * self.pain_from_imagination))
 
-    def _increase_pleasure(self, delta):
+    def _increase_pleasure(self, value):
         """increase the pleasure level in relation to the given value"""
-        self.pleasure += delta * self.pleasure_sensitivity * self.weight
-        self.pleasure = min(self.pleasure, self.pleasure_sensitivity * self.weight)
+        self.pleasure = max(self.pleasure, value * self.pleasure_sensitivity * self.weight)
+        self.pleasure = min(self.pleasure, self.weight)
 
-    def _increase_pain(self, delta):
+    def _increase_pain(self, value):
         """increase the pain level in relation to the given value"""
-        self.pain += delta * self.pain_sensitivity * self.weight
-        self.pain = min(self.pain, self.pain_sensitivity * self.weight)
+        self.pain = max(self.pain, value * self.pain_sensitivity * self.weight)
+        self.pain = min(self.pain, self.weight)
+
+    def is_leading_motive(self):
+        """Returns True if the need is object of the current goal"""
+        from model.events import goal
+        if goal is None:
+            return False
+        else:
+            return goal.consumption.need is self
 
 
 needs = {}
@@ -212,7 +220,6 @@ def reset():
 
 def get_needs():
     """Returns a list with current need states"""
-    from model.events import goal
 
     return {n.name: {"name": n.name,
                      "type": n.type,
@@ -222,7 +229,7 @@ def get_needs():
                      "urgency": n.urgency,
                      "pain": n.pain,
                      "pleasure": n.pleasure,
-                     "is_leading_motive": False if goal is None else goal.consumption.need is n}
+                     "is_leading_motive": n.is_leading_motive()}
             for n in needs.values()}
 
 

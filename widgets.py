@@ -12,6 +12,7 @@ from tkinter import ttk, filedialog, messagebox
 from configuration import Settings
 import math
 import json
+import colorsys
 
 import time
 
@@ -24,7 +25,14 @@ class GuiApp(Tk):
     def __init__(self, *args, **kwargs):
         Tk.__init__(self, *args, **kwargs)
         # self.geometry("500x500")
-        self.minsize(500, 250)
+        self.minsize(500, 750)
+        if Settings.fullscreen:
+            w, h = self.winfo_screenwidth(), self.winfo_screenheight()
+            self.overrideredirect(1)
+            self.geometry("%dx%d+0+0" % (w, h))
+            self.focus_set()  # <-- move focus to this widget
+            self.bind("<Escape>", lambda e: e.widget.quit())
+
 
         # menus
         self.option_add('*tearOff', FALSE)
@@ -246,6 +254,11 @@ class GuiApp(Tk):
                 c.create_text(x, y + offset, text="", fill="purple"),
                 c.create_text(x, y, text=self.simulation.emotions[i].name, fill="black"),
             ])
+
+        c.create_oval(100, 100, 150, 150,  outline ="blue", fill = "#%02x%02x%02x" % (255, 0, 0), width=1)
+        c.create_polygon(150, 150, 200, 200, 150, 250, 100, 200, 150, 150, smooth = True, outline = "green",
+                         fill="#%02x%02x%02x" % (255, 255, 0))
+
 
     def update_need_value_labels(self):
         """paints the updated values on the canvas"""

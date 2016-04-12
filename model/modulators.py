@@ -7,7 +7,7 @@ Modulators
 __author__ = 'joscha'
 __date__ = '31.03.16'
 
-from model.common import decay, exponential_scaling
+from model.common import decay, marginal_sum
 from model.needs import needs  # import needs, competence, exploration, consumptions
 from model.events import goal
 
@@ -82,74 +82,15 @@ Aggregate("general_competence")
 Aggregate("epistemic_competence")
 
 
-
-def compute_global_pain():
-    """Update the global pain perception (nociception) of the agent. It roughly aligns with 'substance p', and
-    also depends on the attention of the agent.
-    We scale from 0..1."""
-
-    amplify = 2  # increase signal for leading motive; this is on top of the normal weight
-    # todo: we might also want to amplify depending on securing rate
-
-    sum_pain = sum([need.pain for need in needs.values()])
-    max_pain = sum([need.weight for need in needs.values()])
-    if goal:
-        sum_pain += goal.consumption.need.pain * amplify * modulators["focus"].value
-        max_pain += goal.consumption.need.weight * amplify * modulators["focus"].max
-    aggregates["combined_pain"].value = exponential_scaling(sum_pain / max_pain)
-
-
-def compute_global_pleasure():
-    """Update the global pleasure perception of the agent. It roughly aligns with endorphine, and
-    also depends on the attention of the agent.
-    We scale from 0..1."""
-    amplify = 2  # increase signal for leading motive; this is on top of the normal weight
-    # todo: we might also want to amplify depending on securing rate
-
-    sum_pleasure = sum([need.pleasure for need in needs.values()])
-    max_pleasure = sum([need.weight for need in needs.values()])
-    if goal:
-        sum_pleasure += goal.consumption.need.pleasure * amplify * modulators["focus"].value
-        max_pleasure += goal.consumption.need.weight * amplify * modulators["focus"].max
-    aggregates["combined_pleasure"].value = exponential_scaling(sum_pleasure / max_pleasure)
-
-
-def compute_global_urge():
-    """Combines the strength of all current urges into a value between 0 and 1.
-    Also takes attention into account."""
-    amplify = 2  # increase signal for leading motive; this is on top of the normal weight
-
-    sum_urge_strength = sum([need.urge for need in needs.values()])
-    max_urge_strength = sum([need.weight for need in needs.values()])
-    if goal:
-        sum_urge_strength += goal.consumption.need.urge * amplify * modulators["focus"].value
-        max_urge_strength += goal.consumption.need.weight * amplify * modulators["focus"].value
-    aggregates["combined_urge"].value = exponential_scaling(sum_urge_strength / max_urge_strength)
-
-
-def compute_global_urgency():
-    """Combines the strength of all current urgencies into a value between 0 and 1. It amounts to a global stress
-    level (~ cortisol).
-    Also takes attention into account."""
-
-    amplify = 2  # increase signal for leading motive; this is on top of the normal weight
-
-    sum_urgency = sum([need.urgency for need in needs.values()])
-    max_urgency = sum([need.weight for need in needs.values()])
-    if goal:
-        sum_urgency += goal.consumption.need.urgency * amplify * modulators["focus"].value
-        max_urgency += goal.consumption.need.weight * amplify * modulators["focus"].max
-    aggregates["combined_urgency"].value = exponential_scaling(sum_urgency / max_urgency)
-
-
-def compute_global_competence():
-    """Tells us how well we are able to cope with the world right now"""
-    aggregates["general_competence"].value = needs["competence"].value
-    if goal:
-        aggregates["epistemic_competence"].value = goal.skill
-        aggregates["general_competence"].value = (aggregates["general_competence"].value*goal.skill)**0.5
-    else:
-        aggregates["epistemic_competence"].value = aggregates["general_competence"].value
+def adjusted_sum_of_need_properties(property, normalized = False):
+    """Uses a marginal sum to add properties of all needs to approach their maximum value.
+    Gives a bonus to the currently leading motive, according to the focus modulator.
+    If normalized, the result is scaled against a maximum of 1."""
+    values = [getattr(need, property) * ((1 + modulators["focus"].value) if need.is_leading_motive() else 1)
+              for need in needs.values()]
+    maximum = max([need.weight * ((1 + modulators["focus"].value) if need.is_leading_motive() else 1)
+                   for need in needs.values()])
+    return marginal_sum(values, maximum) if not normalized else marginal_sum(values, maximum)/maximum
 
 
 def update():
@@ -158,24 +99,39 @@ def update():
     for modulator in modulators.values():
         modulator.update()
 
-    compute_global_pain()
-    compute_global_pleasure()
+    # global pain perception (nociception) roughly aligns with 'substance p'
+    aggregates["combined_pain"].value = adjusted_sum_of_need_properties("pain")
 
-    # valence combines pleasure and pain (~ serotonin)
-    modulators["valence"].approach(aggregates["combined_pleasure"].value - aggregates["combined_pain"].value)
+    # global pleasure perception (~endorphin, but it is more complicated)
+    aggregates["combined_pleasure"].value = adjusted_sum_of_need_properties("pleasure")
+
+    # valence combines pleasure and pain
+    modulators["valence"].approach(adjusted_sum_of_need_properties("pleasure", True) -
+                                   adjusted_sum_of_need_properties("pain", True))
+
+    # combined urge tells us how much we should do stuff (~ dopamine)
+    aggregates["combined_urge"].value = adjusted_sum_of_need_properties("urge", normalized = True)
+
+    # combined urgency is the stress level (~ cortisol)
+    aggregates["combined_urgency"].value = adjusted_sum_of_need_properties("urgency", normalized = True)
 
     # arousal depends on the urges and urgencies of all needs (~ noradrenaline)
-    compute_global_urge()
-    compute_global_urgency()
 
-    modulators["arousal"].approach((aggregates["combined_urge"].value + aggregates["combined_urgency"].value)/2)
+    modulators["arousal"].approach((aggregates["combined_urge"].value + aggregates["combined_urgency"].value) -1)
+
+    # competence tell us our coping potential
+    aggregates["general_competence"].value = needs["competence"].value
+    if goal:
+        aggregates["epistemic_competence"].value = goal.skill
+        aggregates["general_competence"].value = (aggregates["general_competence"].value * goal.skill) ** 0.5
+    else:
+        aggregates["epistemic_competence"].value = aggregates["general_competence"].value
 
     # dominance depends on general competence and the estimated probability of getting reward (~ dopamine)
-    compute_global_competence()
     modulators["dominance"].approach((aggregates["general_competence"].value +
-                                      aggregates["epistemic_competence"].value) / 2)
+                                      aggregates["epistemic_competence"].value) -1)
 
-    # resolution level defines attention to detail
+    # resolution level defines attention to detail (~ serotonin)
     if goal:
         amplify = 1  # factor by which we increase arousal based on strength of leading motive
         target = amplify * (goal.consumption.need.urge - goal.consumption.need.urgency) -\

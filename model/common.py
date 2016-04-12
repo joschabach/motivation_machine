@@ -42,6 +42,16 @@ def exponential_scaling(x, factor=6):
     return 1-math.exp(-max(0, x)*factor)
 
 
+def marginal_sum(values, maximum = 1.0):
+    """Returns the marginal utility of a list of values, depending on the maximum utility. The utility of the first
+    value is its value, the utility of the next one is a fraction of the remaining utility.
+    Here, we use it to compute the sum of pain signals etc."""
+    s = 0
+    for v in values:
+        s += (maximum - s)/maximum * v
+    return s
+
+
 def calculate_signal_strength(step, total_amount = 1.0, duration = 3.5):
     """This function computes the amount of a signaling component released in a single timestep.
     We assume that a chemical signal, such as a neurotransmitter, is delivered with a right-skewed distribution,

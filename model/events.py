@@ -10,7 +10,6 @@ __date__ = '4/4/16'
 import model.needs as needs
 from configuration import Settings
 
-
 goal = None
 
 
@@ -44,6 +43,27 @@ class Event(object):
 
 
 events = {}
+
+def estimate_future_appetence():
+    """Hope"""
+    import model.modulators as modulators
+    s = 0
+    for e in events.values():
+        if e.expected_reward>0 and e.expiration != 0:
+            anticipated_reward = e.consumption.get_anticipated_reward(e.expected_reward, e.expiration)
+            s+= anticipated_reward *(1+modulators.modulators["focus"].value) if e.is_goal() else anticipated_reward
+    return s
+
+
+def estimate_future_aversion():
+    """Fear"""
+    import model.modulators as modulators
+    s = 0
+    for e in events.values():
+        if e.expected_reward < 0 and e.expiration != 0:
+            anticipated_reward = e.consumption.get_anticipated_reward(e.expected_reward, e.expiration)
+            s += anticipated_reward * (1+modulators.modulators["focus"].value) if e.is_goal() else anticipated_reward
+    return s
 
 
 def create_event(id, consumption_name, expected_reward=0, certainty=1, skill=0.8, expiration=-1):

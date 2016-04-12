@@ -92,8 +92,14 @@ class SimFrame(Frame):
         canvasframe.columnconfigure(0, weight=1)
         canvasframe.rowconfigure(0, weight=1)
 
-
-        self.canvas = ScrollableCanvas(canvasframe)
+        if Settings.fullscreen:
+            self.canvas = Canvas(canvasframe)
+            self.canvas.config(width=self.winfo_width(), height=self.winfo_height(), bg='black')
+            self.grid(row=0, column=0, sticky=(W, E, N, S))
+            self.rowconfigure(0, weight=1)
+            self.columnconfigure(0, weight=1)
+        else:
+            self.canvas = ScrollableCanvas(canvasframe)
 
 
         pane = ttk.Frame(self.body, padding=(12, 12, 12, 12))
@@ -152,8 +158,8 @@ class ScrollableCanvas(Canvas):
     def __init__(self, parent=None, *args, **kwargs):
         Canvas.__init__(self, parent, *args, **kwargs)
 
-        self._width =  700
-        self._height = 700
+        self._width =  1200
+        self._height = 980
 
         self._starting_drag_position = ()
 

@@ -7,8 +7,8 @@ Additional default properties for the agent
 __author__ = 'joscha'
 __date__ = '08.04.16'
 
-pain_sensitivity = 1.0
-pleasure_sensitivity = 1.0
+pain_sensitivity = 100.0
+pleasure_sensitivity = 100.0
 
 # anticipated events will elicit pleasure and displeasure responses
 pleasure_from_imagination = 0.1

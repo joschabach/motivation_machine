@@ -10,7 +10,7 @@ __date__   = '31.03.16'
 
 from model.modulators import modulators, aggregates
 from model.needs import needs
-from model.events import events
+from model.events import events, estimate_future_appetence, estimate_future_aversion
 
 emotions = {}
 
@@ -32,10 +32,8 @@ Emotion("joy", lambda: max(0, modulators["valence"].value) * modulators["arousal
 Emotion("bliss", lambda: max(0, modulators["valence"].value) * modulators["resolution_level"].value)
 Emotion("sadness", lambda: max(0, -modulators["valence"].value * (1-modulators["arousal"].value)))
 Emotion("anger", lambda: max(0, -modulators["valence"].value) * modulators["arousal"].value)
-Emotion("fear", lambda: min(1, sum([max(0, -e.consumption.get_anticipated_reward(e.expected_reward, e.expiration))
-                                    for e in events.values()])))
-Emotion("hope", lambda: min(1, sum([max(0, e.consumption.get_anticipated_reward(e.expected_reward, e.expiration))
-                                    for e in events.values()])))
+Emotion("fear", lambda: min(1, -estimate_future_aversion()))
+Emotion("hope", lambda: min(1, estimate_future_appetence()))
 
 Emotion("anxiety", lambda: (1-aggregates["general_competence"].value) * (1-needs["exploration"].value))
 Emotion("surprise", lambda: min(1, 10 * needs["exploration"].pain) * modulators["arousal"].value)
