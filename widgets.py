@@ -255,10 +255,6 @@ class GuiApp(Tk):
                 c.create_text(x, y, text=self.simulation.emotions[i].name, fill="black"),
             ])
 
-        c.create_oval(100, 100, 150, 150,  outline ="blue", fill = "#%02x%02x%02x" % (255, 0, 0), width=1)
-        c.create_polygon(150, 150, 200, 200, 150, 250, 100, 200, 150, 150, smooth = True, outline = "green",
-                         fill="#%02x%02x%02x" % (255, 255, 0))
-
 
     def update_need_value_labels(self):
         """paints the updated values on the canvas"""
